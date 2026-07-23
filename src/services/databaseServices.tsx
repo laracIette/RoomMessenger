@@ -1,0 +1,231 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient"
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
+function use<T, U>(fetchFunc: (id: T) => Promise<U>, id: T | undefined) {
+    const [value, setValue] = useState<U | undefined>(undefined);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        fetchFunc(id)
+            .then((v) => setValue(v))
+            .catch((err) => {
+                console.error("Failed fetch:", err);
+                setError(err.message);
+            })
+            .finally(() => setLoading(false));
+    }, [id]);
+
+    return { value, loading, error };
+}
+
+function useWithChannel<T, U>(
+    fetchFunc: (id: T) => Promise<U>,
+    id: T | undefined,
+    createChannel: (setValueFunc: React.Dispatch<React.SetStateAction<U | undefined>>, id: T) => RealtimeChannel
+) {
+    const [value, setValue] = useState<U | undefined>(undefined);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        const channel = createChannel(setValue, id);
+
+        fetchFunc(id)
+            .then((v) => setValue(v))
+            .then(() => channel.subscribe())
+            .catch((err) => {
+                console.error("Failed fetch:", err);
+                setError(err.message);
+            })
+            .finally(() => setLoading(false));
+
+        return () => { supabase.removeChannel(channel); };
+    }, [id]);
+
+    return { value, loading, error };
+}
+
+async function fetchUserServers(userId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from("server_members")
+        .select("server_id")
+        .eq("user_id", userId);
+
+    if (error) {
+        throw error;
+    }
+
+    return data.map((item) => item.server_id);
+}
+
+async function fetchServerChatrooms(serverId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from("chatrooms")
+        .select("id")
+        .eq("server_id", serverId);
+
+    if (error) {
+        throw error;
+    }
+
+    return data.map((chatroom) => chatroom.id);
+}
+
+async function fetchChatroomMessages(chatroomId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("chatroom_id", chatroomId);
+
+    if (error) {
+        throw error;
+    }
+
+    return data.map((message) => message.id);
+}
+
+async function fetchProfile(profileId: string) {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, created_at, display_name")
+        .eq("id", profileId)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+async function fetchServer(serverId: string) {
+    const { data, error } = await supabase
+        .from("servers")
+        .select("id, name, created_at, user_id")
+        .eq("id", serverId)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+async function fetchChatroom(chatroomId: string) {
+    const { data, error } = await supabase
+        .from("chatrooms")
+        .select("id, name, created_at, user_id, is_closed, visibility, server_id")
+        .eq("id", chatroomId)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+async function fetchMessage(messageId: string) {
+    const { data, error } = await supabase
+        .from("messages")
+        .select("id, content, created_at, user_id, chatroom_id")
+        .eq("id", messageId)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+function createHook<T, U>(func: (id: T) => Promise<U>) {
+    return (id: T | undefined) => use(func, id);
+}
+
+function createHookWithChannel<T, U>(
+    func: (id: T) => Promise<U>,
+    createChannel: (setValueFunc: React.Dispatch<React.SetStateAction<U | undefined>>, id: T) => RealtimeChannel
+) {
+    return (id: T | undefined) => useWithChannel(func, id, createChannel);
+}
+
+export async function createChatroom(name: string, serverId: string) {
+    const { data, error } = await supabase
+        .from("chatrooms")
+        .insert([{ name: name, server_id: serverId }])
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+export async function sendMessage(content: string, chatroomId: string) {
+    const { data, error } = await supabase
+        .from("messages")
+        .insert([{ content: content, chatroom_id: chatroomId }])
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+export const useUserServers = createHook(fetchUserServers);
+export const useServerChatrooms = createHook(fetchServerChatrooms);
+export const useProfile = createHook(fetchProfile);
+export const useServer = createHook(fetchServer);
+export const useChatroom = createHook(fetchChatroom);
+export const useMessage = createHook(fetchMessage);
+
+export const useChatroomMessages = createHookWithChannel(
+    fetchChatroomMessages,
+    (setValueFunc: React.Dispatch<React.SetStateAction<string[] | undefined>>, id: string) => {
+        return supabase
+            .channel(`chatroom_messages_${id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `chatroom_id=eq.${id}`
+                },
+                (payload) => {
+                    setValueFunc((messages) => messages ? [...messages, payload.new.id as string] : [payload.new.id as string]);
+                }
+            );
+    }
+);

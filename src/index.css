@@ -1,0 +1,15 @@
+body {
+    background-color: #232a4f;
+}
+
+* {
+    color: white;
+}
+
+button {
+    background-color: transparent;
+}
+
+input {
+    background-color: transparent;
+}
