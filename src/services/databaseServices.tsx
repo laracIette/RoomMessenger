@@ -173,10 +173,10 @@ function createHookWithChannel<T, U>(
     return (id: T | undefined) => useWithChannel(func, id, createChannel);
 }
 
-export async function createChatroom(name: string, serverId: string) {
+async function insert(table: string, row: any) {
     const { data, error } = await supabase
-        .from("chatrooms")
-        .insert([{ name: name, server_id: serverId }])
+        .from(table)
+        .insert(row)
         .select("id")
         .limit(1)
         .maybeSingle();
@@ -188,20 +188,9 @@ export async function createChatroom(name: string, serverId: string) {
     return data;
 }
 
-export async function sendMessage(content: string, chatroomId: string) {
-    const { data, error } = await supabase
-        .from("messages")
-        .insert([{ content: content, chatroom_id: chatroomId }])
-        .select("id")
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    return data;
-}
+export const insertServer = async (name: string) => insert("servers", { name: name });
+export const insertChatroom = async (name: string, serverId: string) => insert("chatrooms", { name: name, server_id: serverId });
+export const insertMessage = async (content: string, chatroomId: string) => insert("messages", { content: content, chatroom_id: chatroomId });
 
 export const useUserServers = createHook(fetchUserServers);
 export const useServerChatrooms = createHook(fetchServerChatrooms);

@@ -1,8 +1,9 @@
 import { useAuth } from "../../components/AuthProvider/AuthProvider"
-import { Navigate } from "react-router-dom";
-import { useProfile, useUserServers } from "../../services/databaseServices"
+import { Navigate, useNavigate } from "react-router-dom";
+import { insertServer, useProfile, useUserServers } from "../../services/databaseServices"
 import ServerCard from "../Server/ServerCard";
 import { empty } from "../../utils";
+import { useState } from "react";
 
 export default function Home() {
     const { user } = useAuth();
@@ -12,6 +13,20 @@ export default function Home() {
 
     const { value: profile, loading: loadingProfile } = useProfile(user.id);
     const { value: servers, loading: loadingServers } = useUserServers(profile?.id);
+
+    const [newServerName, setNewServerName] = useState("");
+    const navigate = useNavigate();
+
+    const handleCreateServer = () => {
+        if (!newServerName.trim()) return;
+
+        var serverId: string | undefined;
+
+        insertServer(newServerName)
+            .then((server) => serverId = server?.id)
+            .catch((err) => console.error(err.message))
+            .finally(() => { if (serverId) navigate(`/server/${serverId}`); });
+    }
 
     return (
     <>
@@ -33,6 +48,13 @@ export default function Home() {
         </div>
         )
         )}
+        <input
+            type="text"
+            placeholder="Server"
+            value={newServerName}
+            onChange={(e) => setNewServerName(e.target.value)}
+        />
+        <button onClick={handleCreateServer}>Create server</button>
     </>
     );
 }

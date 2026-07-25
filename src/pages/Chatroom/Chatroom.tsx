@@ -1,6 +1,6 @@
 import { Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../../components/AuthProvider/AuthProvider";
-import { sendMessage, useChatroom, useChatroomMessages } from "../../services/databaseServices";
+import { insertMessage, useChatroom, useChatroomMessages } from "../../services/databaseServices";
 import Message from "../../components/Message/Message";
 import { empty } from "../../utils";
 import { useState } from "react";
@@ -23,9 +23,9 @@ export default function Chatroom() {
     const [messageContent, setMessageContent] = useState("");
 
     const handleSendMessage = () => {
-        if (!messageContent || !chatroom) return;
+        if (!messageContent.trim() || !chatroom) return;
 
-        sendMessage(messageContent, chatroom.id)
+        insertMessage(messageContent, chatroom.id)
             .then(() => setMessageContent(""))
             .catch((err) => console.error(err.message));
     };

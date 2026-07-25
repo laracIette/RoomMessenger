@@ -1,6 +1,6 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../components/AuthProvider/AuthProvider";
-import { createChatroom, useServer, useServerChatrooms } from "../../services/databaseServices";
+import { insertChatroom, useServer, useServerChatrooms } from "../../services/databaseServices";
 import ChatroomCard from "../Chatroom/ChatroomCard";
 import { empty } from "../../utils";
 import { useState } from "react";
@@ -24,14 +24,14 @@ export default function Server() {
     const [newChatroomName, setNewChatroomName] = useState("");
 
     const handleCreateChatroom = () => {
-        if (!newChatroomName || !server) return;
+        if (!newChatroomName.trim() || !server) return;
 
         var chatroomId: string | undefined;
 
-        createChatroom(newChatroomName, server.id)
+        insertChatroom(newChatroomName, server.id)
             .then((chatroom) => chatroomId = chatroom?.id)
             .catch((err) => console.error(err.message))
-            .finally(() => { if (chatroomId) navigate(`/chatroom/${chatroomId}`) });
+            .finally(() => { if (chatroomId) navigate(`/chatroom/${chatroomId}`); });
     }
 
     return (
