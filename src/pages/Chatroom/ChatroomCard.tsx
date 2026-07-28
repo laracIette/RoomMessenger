@@ -1,30 +1,39 @@
 import { Link } from "react-router-dom";
-import { useChatroom, useProfile } from "../../services/databaseServices";
+import { deleteChatroom, useChatroom, useProfile } from "../../services/databaseServices";
 
 interface ChatroomCardArgs {
     id: string;
 }
 
 export default function ChatroomCard(args: ChatroomCardArgs) {
-    const { value: chatroom, loading } = useChatroom(args.id);
-
+    const { value: chatroom, loading: loadingChatroom } = useChatroom(args.id);
     const { value: profile, loading: loadingProfile } = useProfile(chatroom?.user_id);
+
+    const handleDeleteChatroom = () => {
+        if (!chatroom) return;
+
+        deleteChatroom(chatroom.id)
+            .catch((err) => console.error(err.message));
+    };
 
     return (
     <>
-        {loading ? (
+        {loadingChatroom ? (
         <p>Loading chatroom...</p>
         ) : (
         !chatroom ? (
         <p>Invalid chatroom</p>
         ) : (
-        <Link to={`/chatroom/${chatroom.id}`}>
-            <p>{chatroom.name}</p>
-            <p>Created on {new Date(chatroom.created_at).toLocaleString()}</p>
-            <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
-            <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
-            <p>{chatroom.visibility}</p>
-        </Link>
+        <div>
+            <Link to={`/chatroom/${chatroom.id}`}>
+                <p>{chatroom.name}</p>
+                <p>Created on {new Date(chatroom.created_at).toLocaleString()}</p>
+                <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
+                <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
+                <p>{chatroom.visibility}</p>
+            </Link>
+            <button onClick={handleDeleteChatroom}>Delete</button>
+        </div>
         )
         )}
     </>

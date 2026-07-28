@@ -28,10 +28,12 @@ function use<T, U>(fetchFunc: (id: T) => Promise<U>, id: T | undefined) {
     return { value, loading, error };
 }
 
+type setValueFunc<T> = React.Dispatch<React.SetStateAction<T | undefined>>;
+
 function useWithChannel<T, U>(
     fetchFunc: (id: T) => Promise<U>,
     id: T | undefined,
-    createChannel: (setValueFunc: React.Dispatch<React.SetStateAction<U | undefined>>, id: T) => RealtimeChannel
+    createChannel: (setValueFunc: setValueFunc<U>, id: T) => RealtimeChannel
 ) {
     const [value, setValue] = useState<U | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(true);
@@ -168,12 +170,12 @@ function createHook<T, U>(func: (id: T) => Promise<U>) {
 
 function createHookWithChannel<T, U>(
     func: (id: T) => Promise<U>,
-    createChannel: (setValueFunc: React.Dispatch<React.SetStateAction<U | undefined>>, id: T) => RealtimeChannel
+    createChannel: (setValueFunc: setValueFunc<U>, id: T) => RealtimeChannel
 ) {
     return (id: T | undefined) => useWithChannel(func, id, createChannel);
 }
 
-async function insert(table: string, row: any) {
+async function insertIntoTable(table: string, row: any) {
     const { data, error } = await supabase
         .from(table)
         .insert(row)
@@ -188,32 +190,68 @@ async function insert(table: string, row: any) {
     return data;
 }
 
-export const insertServer = async (name: string) => insert("servers", { name: name });
-export const insertChatroom = async (name: string, serverId: string) => insert("chatrooms", { name: name, server_id: serverId });
-export const insertMessage = async (content: string, chatroomId: string) => insert("messages", { content: content, chatroom_id: chatroomId });
+async function deleteFromTable(table: string, id: string) {
+    const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        throw error;
+    }
+}
+
+export const insertServer = async (name: string) => insertIntoTable("servers", { name: name });
+export const insertChatroom = async (name: string, serverId: string) => insertIntoTable("chatrooms", { name: name, server_id: serverId });
+export const insertMessage = async (content: string, chatroomId: string) => insertIntoTable("messages", { content: content, chatroom_id: chatroomId });
+
+export const deleteChatroom = async (id: string) => deleteFromTable("chatrooms", id);
+export const deleteMessage = async (id: string) => deleteFromTable("messages", id);
 
 export const useUserServers = createHook(fetchUserServers);
-export const useServerChatrooms = createHook(fetchServerChatrooms);
 export const useProfile = createHook(fetchProfile);
 export const useServer = createHook(fetchServer);
 export const useChatroom = createHook(fetchChatroom);
 export const useMessage = createHook(fetchMessage);
 
+export const useServerChatrooms = createHookWithChannel(
+    fetchServerChatrooms,
+    (setValueFunc: setValueFunc<string[]>, id: string) => {
+        return supabase
+            .channel(`server_chatrooms_${id}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${id}` },
+                (payload) => {
+                    setValueFunc((chatrooms) => chatrooms ? [...chatrooms, payload.new.id as string] : [payload.new.id as string]);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${id}` },
+                (payload) => {
+                    setValueFunc((chatrooms) => chatrooms ? chatrooms.filter((chatroomId) => chatroomId !== payload.old.id) : []);
+                }
+            );
+    }
+);
 export const useChatroomMessages = createHookWithChannel(
     fetchChatroomMessages,
-    (setValueFunc: React.Dispatch<React.SetStateAction<string[] | undefined>>, id: string) => {
+    (setValueFunc: setValueFunc<string[]>, id: string) => {
         return supabase
             .channel(`chatroom_messages_${id}`)
             .on(
                 'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `chatroom_id=eq.${id}`
-                },
+                { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${id}` },
                 (payload) => {
                     setValueFunc((messages) => messages ? [...messages, payload.new.id as string] : [payload.new.id as string]);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${id}` },
+                (payload) => {
+                    setValueFunc((messages) => messages ? messages.filter((messageId) => messageId !== payload.old.id) : []);
                 }
             );
     }

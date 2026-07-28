@@ -17,7 +17,6 @@ export default function Chatroom() {
     }
 
     const { value: chatroom, loading: loadingChatroom } = useChatroom(chatroomId);
-
     const { value: messages, loading: loadingMessages } = useChatroomMessages(chatroom?.id);
 
     const [messageContent, setMessageContent] = useState("");
@@ -47,13 +46,16 @@ export default function Chatroom() {
         </div>
         )
         )}
-        <input
-            type="text"
-            placeholder="Message content"
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-        />
-        <button onClick={handleSendMessage}>Send message</button>
+        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
+            <input
+                type="text"
+                placeholder="Message content"
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                required
+            />
+            <button>Send message</button>
+        </form>
     </>
     );
 }
