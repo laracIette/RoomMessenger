@@ -1,12 +1,24 @@
-import { deleteMessage, useMessage, useProfile } from "../../services/databaseServices";
+import { useMemo } from "react";
+import { deleteMessage, useChatroom, useMessage, useProfile, useServer, useServerMember } from "../../services/databaseServices";
+import { useAuth } from "../AuthProvider/AuthProvider";
 
-interface MessageArgs {
-    id: string;
-}
+export default function Message(args: { id: string }) {
+    const { user } = useAuth();
 
-export default function Message(args: MessageArgs) {
     const { value: message, loading: loadingMessage } = useMessage(args.id);
+    // message creator's profile
     const { value: profile, loading: loadingProfile } = useProfile(message?.user_id);
+    const { value: chatroom } = useChatroom(message?.chatroom_id);
+    const { value: server } = useServer(chatroom?.server_id);
+
+    const serverMemberQuery = useMemo(() => {
+        return server && user ? { server_id: server.id, user_id: user.id } : undefined;
+    }, [server, user]);
+    // auth user's server member
+    const { value: serverMember } = useServerMember(serverMemberQuery);
+
+    const canDelete: boolean = (!!message && !!user && !!serverMember)
+        && (message.user_id === user.id || ['Administrator', 'Owner'].includes(serverMember.role));
 
     const handleDeleteMessage = () => {
         if (!message) return;
@@ -27,7 +39,7 @@ export default function Message(args: MessageArgs) {
             <p>By {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
             <p>At {new Date(message.created_at).toLocaleString()}</p>
             <p>{message.content}</p>
-            <button onClick={handleDeleteMessage}>Delete</button>
+            {canDelete && <button onClick={handleDeleteMessage}>Delete</button>}
         </div>
         )
         )}

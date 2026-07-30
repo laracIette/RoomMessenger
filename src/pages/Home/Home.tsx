@@ -1,6 +1,6 @@
 import { useAuth } from "../../components/AuthProvider/AuthProvider"
 import { Navigate, useNavigate } from "react-router-dom";
-import { insertServer, useProfile, useUserServers } from "../../services/databaseServices"
+import { insertServer, insertServerMember, useProfile, useUserServers } from "../../services/databaseServices"
 import ServerCard from "../Server/ServerCard";
 import { empty } from "../../utils";
 import { useState } from "react";
@@ -15,6 +15,8 @@ export default function Home() {
     const { value: servers, loading: loadingServers } = useUserServers(profile?.id);
 
     const [newServerName, setNewServerName] = useState("");
+    const [joinServerId, setJoinServerId] = useState("");
+
     const navigate = useNavigate();
 
     const handleCreateServer = () => {
@@ -24,6 +26,17 @@ export default function Home() {
 
         insertServer(newServerName)
             .then((server) => serverId = server?.id)
+            .catch((err) => console.error(err.message))
+            .finally(() => { if (serverId) navigate(`/server/${serverId}`); });
+    }
+
+    const handleJoinServer = () => {
+        if (!user || !joinServerId.trim()) return;
+
+        var serverId: string | undefined;
+
+        insertServerMember(joinServerId, user.id)
+            .then((serverMember) => serverId = serverMember?.server_id)
             .catch((err) => console.error(err.message))
             .finally(() => { if (serverId) navigate(`/server/${serverId}`); });
     }
@@ -48,13 +61,26 @@ export default function Home() {
         </div>
         )
         )}
-        <input
-            type="text"
-            placeholder="Server"
-            value={newServerName}
-            onChange={(e) => setNewServerName(e.target.value)}
-        />
-        <button onClick={handleCreateServer}>Create server</button>
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateServer(); }}>
+            <input
+                type="text"
+                placeholder="Server"
+                value={newServerName}
+                onChange={(e) => setNewServerName(e.target.value)}
+                required
+            />
+            <button>Create server</button>
+        </form>
+        <form onSubmit={(e) => { e.preventDefault(); handleJoinServer(); }}>
+            <input
+                type="text"
+                placeholder="Server id"
+                value={joinServerId}
+                onChange={(e) => setJoinServerId(e.target.value)}
+                required
+            />
+            <button>Join server</button>
+        </form>
     </>
     );
 }

@@ -1,18 +1,13 @@
 import { Link } from "react-router-dom";
 import { useProfile, useServer } from "../../services/databaseServices";
 
-interface ServerCardArgs {
-    id: string;
-}
-
-export default function ServerCard(args: ServerCardArgs) {
-    const { value: server, loading } = useServer(args.id);
-
+export default function ServerCard(args: { id: string }) {
+    const { value: server, loading: loadingServer } = useServer(args.id);
     const { value: profile, loading: loadingProfile } = useProfile(server?.user_id);
 
     return (
     <>
-        {loading ? (
+        {loadingServer ? (
         <p>Loading server...</p>
         ) : (
         !server ? (

@@ -53,13 +53,16 @@ export default function Server() {
         </div>
         )
         )}
-        <input
-            type="text"
-            placeholder="Chatroom name"
-            value={newChatroomName}
-            onChange={(e) => setNewChatroomName(e.target.value)}
-        />
-        <button onClick={handleCreateChatroom}>Create chatroom</button>
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateChatroom(); }}>
+            <input
+                type="text"
+                placeholder="Chatroom name"
+                value={newChatroomName}
+                onChange={(e) => setNewChatroomName(e.target.value)}
+                required
+            />
+            <button>Create chatroom</button>
+        </form>
     </>
     );
 }

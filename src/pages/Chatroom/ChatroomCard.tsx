@@ -1,13 +1,24 @@
 import { Link } from "react-router-dom";
-import { deleteChatroom, useChatroom, useProfile } from "../../services/databaseServices";
+import { deleteChatroom, useChatroom, useProfile, useServer, useServerMember } from "../../services/databaseServices";
+import { useMemo } from "react";
+import { useAuth } from "../../components/AuthProvider/AuthProvider";
 
-interface ChatroomCardArgs {
-    id: string;
-}
+export default function ChatroomCard(args: { id: string }) {
+    const { user } = useAuth();
 
-export default function ChatroomCard(args: ChatroomCardArgs) {
     const { value: chatroom, loading: loadingChatroom } = useChatroom(args.id);
+    // chatroom creator's profile
     const { value: profile, loading: loadingProfile } = useProfile(chatroom?.user_id);
+    const { value: server } = useServer(chatroom?.server_id);
+
+    const serverMemberQuery = useMemo(() => {
+        return server && user ? { server_id: server.id, user_id: user.id } : undefined;
+    }, [server, user]);
+    // auth user's server member
+    const { value: serverMember } = useServerMember(serverMemberQuery);
+
+    const canDelete: boolean = (!!chatroom && !!user && !!serverMember)
+        && (chatroom.user_id === user.id || ['Administrator', 'Owner'].includes(serverMember.role));
 
     const handleDeleteChatroom = () => {
         if (!chatroom) return;
@@ -32,7 +43,7 @@ export default function ChatroomCard(args: ChatroomCardArgs) {
                 <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
                 <p>{chatroom.visibility}</p>
             </Link>
-            <button onClick={handleDeleteChatroom}>Delete</button>
+            {canDelete && <button onClick={handleDeleteChatroom}>Delete</button>}
         </div>
         )
         )}

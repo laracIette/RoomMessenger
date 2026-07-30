@@ -14,33 +14,25 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
-    const handleSignUp = async (e: any) => {
-        e.preventDefault();
-
+    const handleSignUp = async () => {
         setLoading(true);
 
         const { error } = await supabase.auth.signUp({
             email: email,
             password: password,
-            options: {
-                data: {
-                    username: username
-                }
-            }
+            options: { data: { username: username } }
         });
         if (error) {
             setMessage(error.message);
         }
         else {
-            setMessage('Check your email for the login link!');
+            setMessage("Check your email for the login link!");
         }
 
         setLoading(false);
     }
 
-    const handleSignIn = async (e: any) => {
-        e.preventDefault();
-
+    const handleSignIn = async () => {
         setLoading(true);
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -70,46 +62,51 @@ export default function Login() {
                 <div>
                     {activePage === SIGN_IN &&
                     <div>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleSignIn(); }}>
                             <input
                                 type="email"
                                 placeholder="Email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                required
                             />
                             <input
                                 type="password"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                required
                             />
-                            <button onClick={handleSignIn} disabled={loading}>Sign in</button>
+                            <button disabled={loading}>Sign in</button>
                         </form>
                     </div>
                     }
 
                     {activePage === SIGN_UP &&
                     <div>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
                             <input
                                 type="email"
                                 placeholder="Email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                required
                             />
                             <input
                                 type="username"
                                 placeholder="Username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                                required
                             />
                             <input
                                 type="password"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                required
                             />
-                            <button onClick={handleSignUp} disabled={loading}>Sign up</button>
+                            <button disabled={loading}>Sign up</button>
                         </form>
                     </div>
                     }

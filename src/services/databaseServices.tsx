@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { type RealtimeChannel } from "@supabase/supabase-js";
 
 function use<T, U>(fetchFunc: (id: T) => Promise<U>, id: T | undefined) {
     const [value, setValue] = useState<U | undefined>(undefined);
@@ -76,6 +76,22 @@ async function fetchUserServers(userId: string): Promise<string[]> {
     }
 
     return data.map((item) => item.server_id);
+}
+
+async function fetchServerMember(args: { server_id: string, user_id: string }) {
+    const { data, error } = await supabase
+        .from("server_members")
+        .select("joined_at, role")
+        .eq("server_id", args.server_id)
+        .eq("user_id", args.user_id)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
 }
 
 async function fetchServerChatrooms(serverId: string): Promise<string[]> {
@@ -175,11 +191,11 @@ function createHookWithChannel<T, U>(
     return (id: T | undefined) => useWithChannel(func, id, createChannel);
 }
 
-async function insertIntoTable(table: string, row: any) {
+async function insertIntoTable<T extends string>(table: string, row: any, selectQuery: T) {
     const { data, error } = await supabase
         .from(table)
         .insert(row)
-        .select("id")
+        .select(selectQuery)
         .limit(1)
         .maybeSingle();
 
@@ -201,9 +217,10 @@ async function deleteFromTable(table: string, id: string) {
     }
 }
 
-export const insertServer = async (name: string) => insertIntoTable("servers", { name: name });
-export const insertChatroom = async (name: string, serverId: string) => insertIntoTable("chatrooms", { name: name, server_id: serverId });
-export const insertMessage = async (content: string, chatroomId: string) => insertIntoTable("messages", { content: content, chatroom_id: chatroomId });
+export const insertServer = async (name: string) => insertIntoTable("servers", { name: name }, "id");
+export const insertServerMember = async (serverId: string, userId: string) => insertIntoTable("server_members", { server_id: serverId, user_id: userId }, "server_id, user_id");
+export const insertChatroom = async (name: string, serverId: string) => insertIntoTable("chatrooms", { name: name, server_id: serverId }, "id");
+export const insertMessage = async (content: string, chatroomId: string) => insertIntoTable("messages", { content: content, chatroom_id: chatroomId }, "id");
 
 export const deleteChatroom = async (id: string) => deleteFromTable("chatrooms", id);
 export const deleteMessage = async (id: string) => deleteFromTable("messages", id);
@@ -211,6 +228,7 @@ export const deleteMessage = async (id: string) => deleteFromTable("messages", i
 export const useUserServers = createHook(fetchUserServers);
 export const useProfile = createHook(fetchProfile);
 export const useServer = createHook(fetchServer);
+export const useServerMember = createHook(fetchServerMember);
 export const useChatroom = createHook(fetchChatroom);
 export const useMessage = createHook(fetchMessage);
 
