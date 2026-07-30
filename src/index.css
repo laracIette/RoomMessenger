@@ -1,15 +1,205 @@
-body {
-    background-color: #232a4f;
-}
-
 * {
     color: white;
+    padding: 0;
+    margin: 0;
 }
 
-button {
-    background-color: transparent;
+html {
+    background-color: #002a4f;
+
+    button, input {
+        background-color: transparent;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: inherit;
+    }
+
+    body {
+        .header {
+            position: absolute;
+        }
+
+        main {
+            width: min(100dvw - 1em, 45em);
+            height: 100%;
+
+            justify-self: center;
+
+            background-color: #232a4f;
+
+            > .home {
+                display: flex;
+                flex-direction: column;
+
+                gap: 1em;
+
+                .create-server-bar, .join-server-bar {
+                    display: flex;
+
+                    input {
+                        flex: 1;
+                    }
+
+                    button {
+                        width: 10em;
+                    }
+                }
+
+                .servers {
+                    display: flex;
+                    flex-direction: column;
+
+                    width: 100%;
+
+                    gap: 0.5em;
+
+                    .server {
+                        display: flex;
+                        flex-direction: column;
+
+                        padding: 0.5em;
+
+                        background-color: #ffffff0d;
+
+                        transition: all 0.2s ease-in-out;
+
+                        &:hover {
+                            background-color: #ffffff50;
+                        }
+                    }
+                }
+            }
+
+            > .server {
+                display: flex;
+                flex-direction: column;
+
+                width: 100%;
+                height: 100dvh;
+
+                gap: 1em;
+
+                .create-chatroom-bar {
+                    display: flex;
+
+                    input {
+                        flex: 1;
+                    }
+
+                    button {
+                        width: 10em;
+                    }
+                }
+
+                .chatrooms {
+                    display: flex;
+                    flex-direction: column;
+
+                    width: 100%;
+
+                    gap: 0.5em;
+
+                    .chatroom {
+                        display: flex;
+                        flex-direction: column;
+
+                        padding: 0.5em;
+
+                        background-color: #ffffff0d;
+
+                        transition: all 0.2s ease-in-out;
+
+                        &:hover {
+                            background-color: #ffffff50;
+                        }
+                    }
+                }
+            }
+
+            > .chatroom {
+                display: flex;
+                flex-direction: column;
+
+                width: 100%;
+                height: 100dvh;
+
+                .messages-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                    flex: 1;
+
+                    width: 100%;
+
+                    overflow-y: auto;
+                    scroll-behavior: smooth;
+
+                    .messages {
+                        display: flex;
+                        flex-direction: column;
+
+                        margin-top: auto;
+
+                        width: 100%;
+
+                        .message {
+                            display: flex;
+                            flex-direction: column;
+                            padding: 0.5em;
+
+                            gap: 0.4em;
+
+                            transition: all 0.2s ease-in-out;
+
+                            &:hover {
+                                background-color: #ffffff0f;
+                            }
+
+                            .top {
+                                display: flex;
+                                flex-direction: row;
+                                justify-content: space-between;
+
+                                .name {
+                                    font-weight: 500;
+                                }
+
+                                .date {
+                                    color: gray;
+                                }
+                            }
+
+                            .content {
+
+                            }
+
+                            button {
+
+                            }
+                        }
+                    }
+                }
+
+                .send-message-bar {
+                    display: flex;
+
+                    input {
+                        flex: 1;
+                    }
+
+                    button {
+                        width: 10em;
+                    }
+                }
+            }
+        }
+    }
 }
 
-input {
-    background-color: transparent;
-}
+
+
+
+
+
+

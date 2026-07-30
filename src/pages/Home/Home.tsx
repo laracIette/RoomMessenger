@@ -43,36 +43,20 @@ export default function Home() {
     }
 
     return (
-    <>
+    <div className="home">
         <p>Welcome {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
 
-        {loadingServers ? (
-        <p>Loading servers...</p>
-        ) : (
-        !servers || empty(servers) ? (
-        <p>No servers found.</p>
-        ) : (
-        <div>
-            <p>Servers</p>
-            <div>
-                {servers.map((id) => (
-                <ServerCard key={id} id={id} />
-                ))}
-            </div>
-        </div>
-        )
-        )}
-        <form onSubmit={(e) => { e.preventDefault(); handleCreateServer(); }}>
+        <form className="create-server-bar" onSubmit={(e) => { e.preventDefault(); handleCreateServer(); }}>
             <input
                 type="text"
-                placeholder="Server"
+                placeholder="Server name"
                 value={newServerName}
                 onChange={(e) => setNewServerName(e.target.value)}
                 required
             />
             <button>Create server</button>
         </form>
-        <form onSubmit={(e) => { e.preventDefault(); handleJoinServer(); }}>
+        <form className="join-server-bar" onSubmit={(e) => { e.preventDefault(); handleJoinServer(); }}>
             <input
                 type="text"
                 placeholder="Server id"
@@ -82,7 +66,21 @@ export default function Home() {
             />
             <button>Join server</button>
         </form>
+
+        {loadingServers ? (
+        <p>Loading servers...</p>
+        ) : (
+        !servers || empty(servers) ? (
+        <p>No servers found.</p>
+        ) : (
+        <div className="servers">
+            {servers.map((id) => (
+            <ServerCard key={id} id={id} />
+            ))}
+        </div>
+        )
+        )}
         {message && <p>{message}</p>}
-    </>
+    </div>
     );
 }

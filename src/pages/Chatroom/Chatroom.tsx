@@ -30,7 +30,7 @@ export default function Chatroom() {
     };
 
     return (
-    <>
+    <div className="chatroom">
         <p>Chatroom {loadingChatroom ? "Loading chatroom..." : (!chatroom ? "Invalid chatroom" : chatroom.name)}</p>
 
         {loadingMessages ? (
@@ -39,14 +39,16 @@ export default function Chatroom() {
         !messages || empty(messages) ? (
         <p>No messages found.</p>
         ) : (
-        <div>
-            {messages.map((id) => (
-            <Message key={id} id={id} />
-            ))}
+        <div className="messages-wrapper">
+            <div className="messages">
+                {messages.map((id) => (
+                <Message key={id} id={id} />
+                ))}
+            </div>
         </div>
         )
         )}
-        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
+        <form className="send-message-bar" onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
             <input
                 type="text"
                 placeholder="Message content"
@@ -56,6 +58,6 @@ export default function Chatroom() {
             />
             <button>Send message</button>
         </form>
-    </>
+    </div>
     );
 }

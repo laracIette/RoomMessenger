@@ -35,10 +35,12 @@ export default function Message(args: { id: string }) {
         !message ? (
         <p>Invalid message</p>
         ) : (
-        <div>
-            <p>By {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
-            <p>At {new Date(message.created_at).toLocaleString()}</p>
-            <p>{message.content}</p>
+        <div className="message">
+            <div className="top">
+                <p className="name">{loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
+                <p className="date">{new Date(message.created_at).toLocaleString()}</p>
+            </div>
+            <p className="content">{message.content}</p>
             {canDelete && <button onClick={handleDeleteMessage}>Delete</button>}
         </div>
         )

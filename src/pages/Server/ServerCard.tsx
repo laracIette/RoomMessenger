@@ -26,7 +26,7 @@ export default function ServerCard(args: { id: string }) {
         !server ? (
         <p>Invalid server</p>
         ) : (
-        <div>
+        <div className="server">
             <Link to={`/server/${server.id}`}>
                 <p>{server.name}</p>
                 <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>

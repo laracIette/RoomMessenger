@@ -4,10 +4,12 @@ import { supabase } from "../../supabaseClient";
 export default function Header() {
     return (
     <>
-        <Link to="/">
-            <button>Home</button>
+        <div className="header">
+            <Link to="/">
+                <button>Home</button>
+            </Link>
             <button onClick={() => supabase.auth.signOut()}>Sign out</button>
-        </Link>
+        </div>
         <main>
             <Outlet />
         </main>

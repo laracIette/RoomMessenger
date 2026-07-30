@@ -35,25 +35,9 @@ export default function Server() {
     }
 
     return (
-    <>
+    <div className="server">
         <p>Server {loadingServer ? "Loading server..." : (!server ? "Invalid server" : server.name)}</p>
-        {loadingChatrooms ? (
-        <p>Loading chatrooms...</p>
-        ) : (
-        !chatrooms || empty(chatrooms) ? (
-        <p>No chatrooms</p>
-        ) : (
-        <div>
-            <p>Chatrooms</p>
-            <div>{
-                chatrooms.map((id) => (
-                <ChatroomCard key={id} id={id} />
-                ))
-            }</div>
-        </div>
-        )
-        )}
-        <form onSubmit={(e) => { e.preventDefault(); handleCreateChatroom(); }}>
+        <form className="create-chatroom-bar" onSubmit={(e) => { e.preventDefault(); handleCreateChatroom(); }}>
             <input
                 type="text"
                 placeholder="Chatroom name"
@@ -63,6 +47,19 @@ export default function Server() {
             />
             <button>Create chatroom</button>
         </form>
-    </>
+        {loadingChatrooms ? (
+        <p>Loading chatrooms...</p>
+        ) : (
+        !chatrooms || empty(chatrooms) ? (
+        <p>No chatrooms</p>
+        ) : (
+        <div className="chatrooms">{
+            chatrooms.map((id) => (
+            <ChatroomCard key={id} id={id} />
+            ))
+        }</div>
+        )
+        )}
+    </div>
     );
 }
