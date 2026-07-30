@@ -75,7 +75,7 @@ async function fetchUserServers(userId: string): Promise<string[]> {
         throw error;
     }
 
-    return data.map((item) => item.server_id);
+    return data.map((serverMember) => serverMember.server_id);
 }
 
 async function fetchServerMember(args: { server_id: string, user_id: string }) {
@@ -120,11 +120,11 @@ async function fetchChatroomMessages(chatroomId: string): Promise<string[]> {
     return data.map((message) => message.id);
 }
 
-async function fetchProfile(profileId: string) {
+async function fetchSingle<T extends string>(table: string, id: string, selectQuery: T) {
     const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, created_at, display_name")
-        .eq("id", profileId)
+        .from(table)
+        .select(selectQuery)
+        .match({ id: id })
         .limit(1)
         .maybeSingle();
 
@@ -135,49 +135,8 @@ async function fetchProfile(profileId: string) {
     return data;
 }
 
-async function fetchServer(serverId: string) {
-    const { data, error } = await supabase
-        .from("servers")
-        .select("id, name, created_at, user_id")
-        .eq("id", serverId)
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    return data;
-}
-
-async function fetchChatroom(chatroomId: string) {
-    const { data, error } = await supabase
-        .from("chatrooms")
-        .select("id, name, created_at, user_id, is_closed, visibility, server_id")
-        .eq("id", chatroomId)
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    return data;
-}
-
-async function fetchMessage(messageId: string) {
-    const { data, error } = await supabase
-        .from("messages")
-        .select("id, content, created_at, user_id, chatroom_id")
-        .eq("id", messageId)
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    return data;
+function createFetchSingle<T extends string>(table: string, selectQuery: T) {
+    return (id: string) => fetchSingle(table, id, selectQuery);
 }
 
 function createHook<T, U>(func: (id: T) => Promise<U>) {
@@ -226,11 +185,11 @@ export const deleteChatroom = async (id: string) => deleteFromTable("chatrooms",
 export const deleteMessage = async (id: string) => deleteFromTable("messages", id);
 
 export const useUserServers = createHook(fetchUserServers);
-export const useProfile = createHook(fetchProfile);
-export const useServer = createHook(fetchServer);
+export const useProfile = createHook(createFetchSingle("profiles", "id, username, created_at, display_name"));
+export const useServer = createHook(createFetchSingle("servers", "id, name, created_at, user_id"));
 export const useServerMember = createHook(fetchServerMember);
-export const useChatroom = createHook(fetchChatroom);
-export const useMessage = createHook(fetchMessage);
+export const useChatroom = createHook(createFetchSingle("chatrooms", "id, name, created_at, user_id, is_closed, visibility, server_id"));
+export const useMessage = createHook(createFetchSingle("messages", "id, content, created_at, user_id, chatroom_id"));
 
 export const useServerChatrooms = createHookWithChannel(
     fetchServerChatrooms,
