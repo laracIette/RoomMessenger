@@ -181,16 +181,37 @@ export const insertServerMember = async (serverId: string, userId: string) => in
 export const insertChatroom = async (name: string, serverId: string) => insertIntoTable("chatrooms", { name: name, server_id: serverId }, "id");
 export const insertMessage = async (content: string, chatroomId: string) => insertIntoTable("messages", { content: content, chatroom_id: chatroomId }, "id");
 
+export const deleteServer = async (id: string) => deleteFromTable("servers", id);
 export const deleteChatroom = async (id: string) => deleteFromTable("chatrooms", id);
 export const deleteMessage = async (id: string) => deleteFromTable("messages", id);
 
-export const useUserServers = createHook(fetchUserServers);
 export const useProfile = createHook(createFetchSingle("profiles", "id, username, created_at, display_name"));
 export const useServer = createHook(createFetchSingle("servers", "id, name, created_at, user_id"));
 export const useServerMember = createHook(fetchServerMember);
 export const useChatroom = createHook(createFetchSingle("chatrooms", "id, name, created_at, user_id, is_closed, visibility, server_id"));
 export const useMessage = createHook(createFetchSingle("messages", "id, content, created_at, user_id, chatroom_id"));
 
+export const useUserServers = createHookWithChannel(
+    fetchUserServers,
+    (setValueFunc: setValueFunc<string[]>, id: string) => {
+        return supabase
+            .channel(`server_chatrooms_${id}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'servers', filter: `user_id=eq.${id}` },
+                (payload) => {
+                    setValueFunc((servers) => servers ? [...servers, payload.new.id as string] : [payload.new.id as string]);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'servers', filter: `user_id=eq.${id}` },
+                (payload) => {
+                    setValueFunc((servers) => servers ? servers.filter((serverId) => serverId !== payload.old.id) : []);
+                }
+            );
+    }
+);
 export const useServerChatrooms = createHookWithChannel(
     fetchServerChatrooms,
     (setValueFunc: setValueFunc<string[]>, id: string) => {

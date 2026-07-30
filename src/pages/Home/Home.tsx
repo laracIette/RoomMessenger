@@ -14,6 +14,7 @@ export default function Home() {
     const { value: profile, loading: loadingProfile } = useProfile(user.id);
     const { value: servers, loading: loadingServers } = useUserServers(profile?.id);
 
+    const [message, setMessage] = useState<string | null>(null)
     const [newServerName, setNewServerName] = useState("");
     const [joinServerId, setJoinServerId] = useState("");
 
@@ -26,7 +27,7 @@ export default function Home() {
 
         insertServer(newServerName)
             .then((server) => serverId = server?.id)
-            .catch((err) => console.error(err.message))
+            .catch((err) => setMessage(err.message))
             .finally(() => { if (serverId) navigate(`/server/${serverId}`); });
     }
 
@@ -37,7 +38,7 @@ export default function Home() {
 
         insertServerMember(joinServerId, user.id)
             .then((serverMember) => serverId = serverMember?.server_id)
-            .catch((err) => console.error(err.message))
+            .catch((err) => setMessage(err.message))
             .finally(() => { if (serverId) navigate(`/server/${serverId}`); });
     }
 
@@ -81,6 +82,7 @@ export default function Home() {
             />
             <button>Join server</button>
         </form>
+        {message && <p>{message}</p>}
     </>
     );
 }
