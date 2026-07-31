@@ -7,8 +7,19 @@
 html {
     background-color: #002a4f;
 
-    button, input {
+    input {
         background-color: transparent;
+    }
+
+    button {
+        background-color: #585858;
+        border-style: none;
+
+        transition: all 0.1s ease-in-out;
+
+        &:hover {
+            background-color: #6e6e6e;
+        }
     }
 
     a {
@@ -192,6 +203,18 @@ html {
                         width: 10em;
                     }
                 }
+            }
+        }
+
+        .context-menu {
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            transform: translate(0.1em, -50%);
+
+            .option {
+                text-align: start;
+                padding: 0.2em 0.3em;
             }
         }
     }
