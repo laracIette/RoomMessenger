@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { deleteChatroom, useChatroom, useProfile, useServer, useServerMember } from "../../services/databaseServices";
 import { useMemo } from "react";
 import { useAuth } from "../../components/AuthProvider/AuthProvider";
+import ContextMenu, { useContextMenu } from "../../components/ContextMenu/ContextMenu";
 
 export default function ChatroomCard(args: { id: string }) {
     const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function ChatroomCard(args: { id: string }) {
             .catch((err) => console.error(err.message));
     };
 
+    const { contextMenuVisible, contextMenuPosition, handleOnContextMenu } = useContextMenu();
+
     return (
     <>
         {loadingChatroom ? (
@@ -35,14 +38,23 @@ export default function ChatroomCard(args: { id: string }) {
         !chatroom ? (
         <p>Invalid chatroom</p>
         ) : (
-        <div className="chatroom">
+        <div className="chatroom" onContextMenu={handleOnContextMenu}>
             <Link to={`/chatroom/${chatroom.id}`}>
                 <p>{chatroom.name}</p>
                 <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)} on {new Date(chatroom.created_at).toLocaleString()}</p>
                 <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
                 <p>{chatroom.visibility}</p>
             </Link>
-            {canDelete && <button onClick={handleDeleteChatroom}>Delete</button>}
+
+            <ContextMenu
+                visible={contextMenuVisible}
+                position={contextMenuPosition}
+                actions={[
+                    { label: "Copy id", action: () => navigator.clipboard.writeText(chatroom.id) },
+                    { label: "Copy user id", action: () => navigator.clipboard.writeText(chatroom.user_id) },
+                    ...(canDelete ? [{ label: "Delete", action: handleDeleteChatroom }] : []),
+                ]}
+            />
         </div>
         )
         )}

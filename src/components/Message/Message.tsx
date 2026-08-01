@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { deleteMessage, useChatroom, useMessage, useProfile, useServer, useServerMember } from "../../services/databaseServices";
 import { useAuth } from "../AuthProvider/AuthProvider";
-import ContextMenu from "../ContextMenu/ContextMenu";
+import ContextMenu, { useContextMenu } from "../ContextMenu/ContextMenu";
 
 export default function Message({ id }: { id: string }) {
     const { user } = useAuth();
@@ -28,32 +28,7 @@ export default function Message({ id }: { id: string }) {
             .catch((err) => console.error(err.message));
     };
 
-    const [contextMenuVisible, setContextMenuVisible] = useState(false);
-    const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-
-    const handleOnContextMenu = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        window.dispatchEvent(new Event('close-context-menu'));
-
-        setContextMenuPosition({ x: e.pageX, y: e.pageY });
-        setContextMenuVisible(true);
-    }
-
-    useEffect(() => {
-        const closeContextMenu = () => setContextMenuVisible(false);
-
-        window.addEventListener('click', closeContextMenu);
-        window.addEventListener('contextmenu', closeContextMenu);
-        window.addEventListener('close-context-menu', closeContextMenu);
-
-        return () => {
-            window.removeEventListener('click', closeContextMenu);
-            window.removeEventListener('contextmenu', closeContextMenu);
-            window.removeEventListener('close-context-menu', closeContextMenu);
-        };
-    }, []);
+    const { contextMenuVisible, contextMenuPosition, handleOnContextMenu } = useContextMenu();
 
     return (
     <>
