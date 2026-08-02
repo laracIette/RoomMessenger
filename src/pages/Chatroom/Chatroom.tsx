@@ -4,6 +4,7 @@ import { insertMessage, useChatroom, useChatroomMessages } from "../../services/
 import Message from "../../components/Message/Message";
 import { empty } from "../../utils";
 import { useState } from "react";
+import { differenceInHours } from "date-fns";
 
 export default function Chatroom() {
     const { user } = useAuth();
@@ -29,9 +30,19 @@ export default function Chatroom() {
             .catch((err) => console.error(err.message));
     };
 
+    const latestMessage = messages?.reduce((latest, current) => {
+        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+    });
+
+    const canSendMessage: boolean = (!!chatroom && !chatroom.is_closed)
+        && (!latestMessage || differenceInHours(Date.now(), new Date(latestMessage.created_at)) < 24);
+
     return (
     <div className="chatroom">
-        <p>Chatroom {loadingChatroom ? "Loading chatroom..." : (!chatroom ? "Invalid chatroom" : chatroom.name)}</p>
+        <div className="top">
+            <p>Chatroom {loadingChatroom ? "Loading chatroom..." : (!chatroom ? "Invalid chatroom" : chatroom.name)}</p>
+            {}
+        </div>
 
         {loadingMessages ? (
             <p>Loading messages...</p>
@@ -41,13 +52,20 @@ export default function Chatroom() {
         ) : (
         <div className="messages-wrapper">
             <div className="messages">
-                {messages.map((id) => (
-                <Message key={id} id={id} />
+                {messages.map((message) => (
+                <Message key={message.id}
+                    id={message.id}
+                    content={message.content}
+                    createdAt={message.created_at}
+                    userId={message.user_id}
+                    chatroomId={message.chatroom_id}
+                />
                 ))}
             </div>
         </div>
         )
         )}
+        {canSendMessage ? (
         <form className="send-message-bar" onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
             <input
                 type="text"
@@ -58,6 +76,12 @@ export default function Chatroom() {
             />
             <button>Send message</button>
         </form>
+        ) : (
+        <div className="chatroom-closed-bar">
+            <p>Chatroom closed</p>
+        </div>
+        )}
+
     </div>
     );
 }

@@ -54,8 +54,16 @@ export default function Server() {
         <p>No chatrooms</p>
         ) : (
         <div className="chatrooms">{
-            chatrooms.map((id) => (
-            <ChatroomCard key={id} id={id} />
+            chatrooms.map((chatroom) => (
+            <ChatroomCard key={chatroom.id}
+                id={chatroom.id}
+                name={chatroom.name}
+                createdAt={chatroom.created_at}
+                userId={chatroom.user_id}
+                isClosed={chatroom.is_closed}
+                visibility={chatroom.visibility}
+                serverId={chatroom.server_id}
+            />
             ))
         }</div>
         )

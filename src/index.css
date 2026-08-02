@@ -124,7 +124,7 @@ html {
 
                         padding: 0.5em;
 
-                        .top {
+                        .top, .bottom {
                             display: flex;
                             flex-direction: row;
                             justify-content: space-between;
@@ -210,6 +210,12 @@ html {
                     button {
                         width: 10em;
                     }
+                }
+
+                .chatroom-closed-bar {
+                    display: flex;
+                    padding: 0.5em;
+                    justify-content: center;
                 }
             }
         }

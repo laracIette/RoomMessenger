@@ -1,65 +1,71 @@
 import { Link } from "react-router-dom";
-import { deleteChatroom, useChatroom, useProfile, useServer, useServerMember } from "../../services/databaseServices";
+import { deleteChatroom, updateChatroom, useProfile, useServer, useServerMember } from "../../services/databaseServices";
 import { useMemo } from "react";
 import { useAuth } from "../../components/AuthProvider/AuthProvider";
 import ContextMenu, { useContextMenu } from "../../components/ContextMenu/ContextMenu";
 
-export default function ChatroomCard(args: { id: string }) {
+export default function ChatroomCard({ id, name, createdAt, userId, isClosed, visibility, serverId }:
+    { id: string, name: string, createdAt: string, userId: string, isClosed: boolean, visibility: string, serverId: string }
+) {
     const { user } = useAuth();
 
-    const { value: chatroom, loading: loadingChatroom } = useChatroom(args.id);
     // chatroom creator's profile
-    const { value: profile, loading: loadingProfile } = useProfile(chatroom?.user_id);
-    const { value: server } = useServer(chatroom?.server_id);
+    const { value: profile, loading: loadingProfile } = useProfile(userId);
+    const { value: server } = useServer(serverId);
 
-    const serverMemberQuery = useMemo(() => {
-        return server && user ? { server_id: server.id, user_id: user.id } : undefined;
-    }, [server, user]);
     // auth user's server member
+    const serverMemberQuery = useMemo(() => {
+        return server && user ? { serverId: server.id, userId: user.id } : undefined;
+    }, [server, user]);
     const { value: serverMember } = useServerMember(serverMemberQuery);
 
-    const canDelete: boolean = (!!chatroom && !!user && !!serverMember)
-        && (chatroom.user_id === user.id || ['Administrator', 'Owner'].includes(serverMember.role));
+    const hasRights: boolean = (!!user && !!serverMember)
+        && (userId === user.id || ['Administrator', 'Owner'].includes(serverMember.role));
 
     const handleDeleteChatroom = () => {
-        if (!chatroom) return;
-
-        deleteChatroom(chatroom.id)
+        deleteChatroom(id)
             .catch((err) => console.error(err.message));
     };
+
+    const handleOpenChatroom = () => {
+        updateChatroom(id, { is_closed: false })
+            .catch((err) => console.error(err.message));
+    }
+
+    const handleCloseChatroom = () => {
+        updateChatroom(id, { is_closed: true })
+            .catch((err) => console.error(err.message));
+    }
 
     const { contextMenuVisible, contextMenuPosition, handleOnContextMenu } = useContextMenu();
 
     return (
-    <>
-        {loadingChatroom ? (
-        <p>Loading chatroom...</p>
-        ) : (
-        !chatroom ? (
-        <p>Invalid chatroom</p>
-        ) : (
-        <div className="chatroom card" onContextMenu={handleOnContextMenu}>
-            <Link to={`/chatroom/${chatroom.id}`}>
-                <div className="top">
-                    <p>{chatroom.name}</p>
-                    <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
-                </div>
-                <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
-                <p>{chatroom.visibility}</p>
-            </Link>
+    <div className="chatroom card" onContextMenu={handleOnContextMenu}>
+        <Link to={`/chatroom/${id}`}>
+            <div className="top">
+                <p>{name}</p>
+                <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
+            </div>
+            <div className="bottom">
+                <p>{isClosed ? "Closed" : "Open"}</p>
+                <p>{visibility}</p>
+            </div>
+        </Link>
 
-            <ContextMenu
-                visible={contextMenuVisible}
-                position={contextMenuPosition}
-                actions={[
-                    { label: "Copy id", action: () => navigator.clipboard.writeText(chatroom.id) },
-                    { label: "Copy user id", action: () => navigator.clipboard.writeText(chatroom.user_id) },
-                    ...(canDelete ? [{ label: "Delete", action: handleDeleteChatroom }] : []),
-                ]}
-            />
-        </div>
-        )
-        )}
-    </>
+        <ContextMenu
+            visible={contextMenuVisible}
+            position={contextMenuPosition}
+            actions={[
+                { label: "Copy id", action: () => navigator.clipboard.writeText(id) },
+                { label: "Copy user id", action: () => navigator.clipboard.writeText(userId) },
+                ...(hasRights ? [
+                    { label: "Delete", action: handleDeleteChatroom },
+                    isClosed
+                        ? { label: "Open", action: handleOpenChatroom }
+                        : { label: "Close", action: handleCloseChatroom },
+                ] : []),
+            ]}
+        />
+    </div>
     );
 }

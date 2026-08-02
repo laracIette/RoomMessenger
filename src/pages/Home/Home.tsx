@@ -74,8 +74,13 @@ export default function Home() {
         <p>No servers found.</p>
         ) : (
         <div className="servers">
-            {servers.map((id) => (
-            <ServerCard key={id} id={id} />
+            {servers.map((server) => (
+            <ServerCard key={server.id}
+                id={server.id}
+                name={server.name}
+                createdAt={server.created_at}
+                userId={server.user_id}
+            />
             ))}
         </div>
         )

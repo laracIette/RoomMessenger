@@ -65,66 +65,11 @@ function useWithChannel<T, U>(
     return { value, loading, error };
 }
 
-async function fetchUserServers(userId: string): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("server_members")
-        .select("server_id")
-        .eq("user_id", userId);
-
-    if (error) {
-        throw error;
-    }
-
-    return data.map((serverMember) => serverMember.server_id);
-}
-
-async function fetchServerMember(args: { server_id: string, user_id: string }) {
-    const { data, error } = await supabase
-        .from("server_members")
-        .select("joined_at, role")
-        .eq("server_id", args.server_id)
-        .eq("user_id", args.user_id)
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    return data;
-}
-
-async function fetchServerChatrooms(serverId: string): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("chatrooms")
-        .select("id")
-        .eq("server_id", serverId);
-
-    if (error) {
-        throw error;
-    }
-
-    return data.map((chatroom) => chatroom.id);
-}
-
-async function fetchChatroomMessages(chatroomId: string): Promise<string[]> {
-    const { data, error } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("chatroom_id", chatroomId);
-
-    if (error) {
-        throw error;
-    }
-
-    return data.map((message) => message.id);
-}
-
-async function fetchSingle<T extends string>(table: string, id: string, selectQuery: T) {
+async function fetchSingle<T extends string>(table: string, selectQuery: T, matchQuery: Record<string, any>) {
     const { data, error } = await supabase
         .from(table)
         .select(selectQuery)
-        .match({ id: id })
+        .match(matchQuery)
         .limit(1)
         .maybeSingle();
 
@@ -135,8 +80,17 @@ async function fetchSingle<T extends string>(table: string, id: string, selectQu
     return data;
 }
 
-function createFetchSingle<T extends string>(table: string, selectQuery: T) {
-    return (id: string) => fetchSingle(table, id, selectQuery);
+async function fetchAll<T extends string>(table: string, selectQuery: T, matchQuery: Record<string, any>) {
+    const { data, error } = await supabase
+        .from(table)
+        .select(selectQuery)
+        .match(matchQuery);
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
 }
 
 function createHook<T, U>(func: (id: T) => Promise<U>) {
@@ -169,7 +123,18 @@ async function deleteFromTable(table: string, id: string) {
     const { error } = await supabase
         .from(table)
         .delete()
-        .eq("id", id);
+        .match({ id: id });
+
+    if (error) {
+        throw error;
+    }
+}
+
+async function updateFromTable(table: string, id: string, values: Record<string, any>) {
+    const { error } = await supabase
+        .from(table)
+        .update(values)
+        .match({ id: id });
 
     if (error) {
         throw error;
@@ -181,31 +146,33 @@ export const insertServerMember = async (serverId: string, userId: string) => in
 export const insertChatroom = async (name: string, serverId: string) => insertIntoTable("chatrooms", { name: name, server_id: serverId }, "id");
 export const insertMessage = async (content: string, chatroomId: string) => insertIntoTable("messages", { content: content, chatroom_id: chatroomId }, "id");
 
+export const updateChatroom = async (id: string, values: Record<string, any>) => updateFromTable("chatrooms", id, values);
+
 export const deleteServer = async (id: string) => deleteFromTable("servers", id);
 export const deleteChatroom = async (id: string) => deleteFromTable("chatrooms", id);
 export const deleteMessage = async (id: string) => deleteFromTable("messages", id);
 
-export const useProfile = createHook(createFetchSingle("profiles", "id, username, created_at, display_name"));
-export const useServer = createHook(createFetchSingle("servers", "id, name, created_at, user_id"));
-export const useServerMember = createHook(fetchServerMember);
-export const useChatroom = createHook(createFetchSingle("chatrooms", "id, name, created_at, user_id, is_closed, visibility, server_id"));
-export const useMessage = createHook(createFetchSingle("messages", "id, content, created_at, user_id, chatroom_id"));
+export const useProfile = createHook(async (id: string) => fetchSingle("profiles", "id, username, created_at, display_name", { id: id }));
+export const useServer = createHook(async (id: string) => fetchSingle("servers", "id, name, created_at, user_id", { id: id }));
+export const useServerMember = createHook(async ({ serverId, userId }: { serverId: string, userId: string }) => fetchSingle("server_members", "joined_at, role", { server_id: serverId, user_id: userId }));
+export const useChatroom = createHook(async (id: string) => fetchSingle("chatrooms", "id, name, created_at, user_id, is_closed, visibility, server_id", { id: id }));
+export const useMessage = createHook(async (id: string) => fetchSingle("messages", "id, content, created_at, user_id, chatroom_id", { id: id }));
 
 export const useUserServers = createHookWithChannel(
-    fetchUserServers,
-    (setValueFunc: setValueFunc<string[]>, id: string) => {
+    async (userId: string) => fetchAll("servers", "id, name, created_at, user_id", { user_id: userId }),
+    (setValueFunc: setValueFunc<any[]>, userId: string) => {
         return supabase
-            .channel(`server_chatrooms_${id}`)
+            .channel(`user_servers_${userId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'servers', filter: `user_id=eq.${id}` },
+                { event: 'INSERT', schema: 'public', table: 'servers', filter: `user_id=eq.${userId}` },
                 (payload) => {
                     setValueFunc((servers) => servers ? [...servers, payload.new.id as string] : [payload.new.id as string]);
                 }
             )
             .on(
                 'postgres_changes',
-                { event: 'DELETE', schema: 'public', table: 'servers', filter: `user_id=eq.${id}` },
+                { event: 'DELETE', schema: 'public', table: 'servers', filter: `user_id=eq.${userId}` },
                 (payload) => {
                     setValueFunc((servers) => servers ? servers.filter((serverId) => serverId !== payload.old.id) : []);
                 }
@@ -213,43 +180,50 @@ export const useUserServers = createHookWithChannel(
     }
 );
 export const useServerChatrooms = createHookWithChannel(
-    fetchServerChatrooms,
-    (setValueFunc: setValueFunc<string[]>, id: string) => {
+    async (serverId: string) => fetchAll("chatrooms", "id, name, created_at, user_id, is_closed, visibility, server_id", { server_id: serverId }),
+    (setValueFunc: setValueFunc<any[]>, serverId: string) => {
         return supabase
-            .channel(`server_chatrooms_${id}`)
+            .channel(`server_chatrooms_${serverId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${id}` },
+                { event: 'INSERT', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${serverId}` },
                 (payload) => {
-                    setValueFunc((chatrooms) => chatrooms ? [...chatrooms, payload.new.id as string] : [payload.new.id as string]);
+                    setValueFunc((chatrooms) => chatrooms ? [...chatrooms, payload.new] : [payload.new]);
                 }
             )
             .on(
                 'postgres_changes',
-                { event: 'DELETE', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${id}` },
+                { event: 'UPDATE', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${serverId}` },
                 (payload) => {
-                    setValueFunc((chatrooms) => chatrooms ? chatrooms.filter((chatroomId) => chatroomId !== payload.old.id) : []);
+                    setValueFunc((chatrooms) => chatrooms ? chatrooms.map((chatroom) => chatroom.id === payload.new.id ? payload.new : chatroom) : []);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'chatrooms', filter: `server_id=eq.${serverId}` },
+                (payload) => {
+                    setValueFunc((chatrooms) => chatrooms ? chatrooms.filter((chatroom) => chatroom.id !== payload.old.id) : []);
                 }
             );
     }
 );
 export const useChatroomMessages = createHookWithChannel(
-    fetchChatroomMessages,
-    (setValueFunc: setValueFunc<string[]>, id: string) => {
+    async (chatroomId: string) => fetchAll("messages", "id, content, created_at, user_id, chatroom_id", { chatroom_id: chatroomId }),
+    (setValueFunc: setValueFunc<any[]>, chatroomId: string) => {
         return supabase
-            .channel(`chatroom_messages_${id}`)
+            .channel(`chatroom_messages_${chatroomId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${id}` },
+                { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${chatroomId}` },
                 (payload) => {
-                    setValueFunc((messages) => messages ? [...messages, payload.new.id as string] : [payload.new.id as string]);
+                    setValueFunc((messages) => messages ? [...messages, payload.new] : [payload.new]);
                 }
             )
             .on(
                 'postgres_changes',
-                { event: 'DELETE', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${id}` },
+                { event: 'DELETE', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${chatroomId}` },
                 (payload) => {
-                    setValueFunc((messages) => messages ? messages.filter((messageId) => messageId !== payload.old.id) : []);
+                    setValueFunc((messages) => messages ? messages.filter((message) => message.id !== payload.old.id) : []);
                 }
             );
     }
