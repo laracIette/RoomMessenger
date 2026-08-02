@@ -7,7 +7,6 @@ export default function ServerCard(args: { id: string }) {
     const { user } = useAuth();
 
     const { value: server, loading: loadingServer } = useServer(args.id);
-    const { value: profile, loading: loadingProfile } = useProfile(server?.user_id);
 
     const canDelete: boolean = (!!server && !!user)
         && (server.user_id === user.id);
@@ -29,10 +28,9 @@ export default function ServerCard(args: { id: string }) {
         !server ? (
         <p>Invalid server</p>
         ) : (
-        <div className="server" onContextMenu={handleOnContextMenu}>
+        <div className="server card" onContextMenu={handleOnContextMenu}>
             <Link to={`/server/${server.id}`}>
                 <p>{server.name}</p>
-                <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
             </Link>
 
             <ContextMenu

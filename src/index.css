@@ -40,6 +40,20 @@ html {
 
             background-color: #232a4f;
 
+            .card {
+                background-color: #ffffff0d;
+
+                transition: all 0.15s ease-in-out;
+
+                &:hover {
+                    background-color: #ffffff30;
+                }
+
+                &:active {
+                    background-color: #ffffff60;
+                }
+            }
+
             > .home {
                 display: flex;
                 flex-direction: column;
@@ -71,14 +85,6 @@ html {
                         flex-direction: column;
 
                         padding: 0.5em;
-
-                        background-color: #ffffff0d;
-
-                        transition: all 0.2s ease-in-out;
-
-                        &:hover {
-                            background-color: #ffffff50;
-                        }
                     }
                 }
             }
@@ -118,12 +124,10 @@ html {
 
                         padding: 0.5em;
 
-                        background-color: #ffffff0d;
-
-                        transition: all 0.2s ease-in-out;
-
-                        &:hover {
-                            background-color: #ffffff50;
+                        .top {
+                            display: flex;
+                            flex-direction: row;
+                            justify-content: space-between;
                         }
                     }
                 }
@@ -161,10 +165,14 @@ html {
 
                             gap: 0.4em;
 
-                            transition: all 0.2s ease-in-out;
+                            transition: all 0.1s ease-in-out;
 
                             &:hover {
                                 background-color: #ffffff0f;
+                            }
+
+                            &:active {
+                                background-color: #ffffff30;
                             }
 
                             .top {

@@ -38,10 +38,12 @@ export default function ChatroomCard(args: { id: string }) {
         !chatroom ? (
         <p>Invalid chatroom</p>
         ) : (
-        <div className="chatroom" onContextMenu={handleOnContextMenu}>
+        <div className="chatroom card" onContextMenu={handleOnContextMenu}>
             <Link to={`/chatroom/${chatroom.id}`}>
-                <p>{chatroom.name}</p>
-                <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)} on {new Date(chatroom.created_at).toLocaleString()}</p>
+                <div className="top">
+                    <p>{chatroom.name}</p>
+                    <p>Created by {loadingProfile ? "Loading profile..." : (!profile ? "Invalid profile" : profile.username)}</p>
+                </div>
                 <p>{chatroom.is_closed ? "Closed" : "Open"}</p>
                 <p>{chatroom.visibility}</p>
             </Link>
