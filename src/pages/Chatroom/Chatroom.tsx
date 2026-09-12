@@ -30,9 +30,11 @@ export default function Chatroom() {
             .catch((err) => console.error(err.message));
     };
 
-    const latestMessage = messages?.reduce((latest, current) => {
-        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
-    });
+    const latestMessage = messages && !empty(messages)
+        ? messages.reduce((latest, current) => {
+            return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+        })
+        : null;
 
     const canSendMessage: boolean = (!!chatroom && !chatroom.is_closed)
         && (!latestMessage || differenceInHours(Date.now(), new Date(latestMessage.created_at)) < 24);
@@ -41,16 +43,15 @@ export default function Chatroom() {
     <div className="chatroom">
         <div className="top">
             <p>Chatroom {loadingChatroom ? "Loading chatroom..." : (!chatroom ? "Invalid chatroom" : chatroom.name)}</p>
-            {}
         </div>
 
+        <div className="messages-wrapper">
         {loadingMessages ? (
             <p>Loading messages...</p>
         ) : (
         !messages || empty(messages) ? (
         <p>No messages found.</p>
         ) : (
-        <div className="messages-wrapper">
             <div className="messages">
                 {messages.map((message) => (
                 <Message key={message.id}
@@ -62,9 +63,9 @@ export default function Chatroom() {
                 />
                 ))}
             </div>
-        </div>
         )
         )}
+        </div>
         {canSendMessage ? (
         <form className="send-message-bar" onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
             <input
